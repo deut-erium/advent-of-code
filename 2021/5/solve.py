@@ -28,11 +28,36 @@ def check_horiz_or_vert(line):
 
 
 from collections import Counter
-c = Counter()
-for i in range(len(lines)):
-    for j in range(i+1, len(lines)):
-        if check_horiz_or_vert(lines[i]) and check_horiz_or_vert(lines[j]):
-            c[intersection(lines[i],lines[j])]+=1
-            if intersection(lines[i],lines[j])==float('inf'):
-                print(i,j)
+# c = Counter()
+# for i in range(len(lines)):
+#     for j in range(i+1, len(lines)):
+#         if check_horiz_or_vert(lines[i]) and check_horiz_or_vert(lines[j]):
+#             c[intersection(lines[i],lines[j])]+=1
+#             if intersection(lines[i],lines[j])==float('inf'):
+#                 print(i,j)
 
+def points_on_line(line):
+    (x1,y1),(x2,y2) = line
+    if x1==x2:
+        if y1>y2:
+            y1,y2 = y2,y1
+        return ( (x1,y) for y in range(y1,y2+1))
+    elif y1==y2:
+        if x1>x2:
+            x1,x2 = x2,x1
+        return ( (x,y1) for x in  range(x1,x2+1))
+    elif x1-x2 == y1-y2:
+        if x1>x2:
+             x1,x2,y1,y2 = x2,x1,y2,y1
+        return ( (x1+i,y1+i) for i in range(x2-x1+1))
+    elif x1-x2 == y2-y1:
+        if x1>x2:
+            x1,x2,y1,y2 = x2,x1,y2,y1
+        return ( (x1+i,y1-i) for i in range(x2-x1+1))
+    return ()
+
+points = Counter()
+for l in lines:
+    points.update(points_on_line(l))
+
+print(sum(v>1 for v in points.values()))
