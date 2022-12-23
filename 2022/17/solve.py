@@ -3,27 +3,18 @@ from itertools import cycle
 with open("input", "r") as f:
     jetstream_s = f.read().strip()
 
-import random
-# jetstream_s = "".join(random.choices("<>",k=40))
-len_js = len(jetstream_s)
 # jetstream_s = ">>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>"
 jetstream = cycle(jetstream_s)
 pieces = [
-    [-1,0,1,2], # "####"
-    [(-1+1j),(0),(1j),(1+1j),(2j)], # ".#.\n###\n.#."
-    [(-1),(0),(1),(1+1j),(1+2j)], # "..#\n..#\n###"
-    [(-1+0j),(-1+1j),(-1+2j),(-1+3j)],       # "#\n#\n#\n#"
-    [(-1),(0),(-1+1j),(1j)]
+    (-1,0,1,2), # "####"
+    ((-1+1j),(0),(1j),(1+1j),(2j)), # ".#.\n###\n.#."
+    ((-1),(0),(1),(1+1j),(1+2j)), # "..#\n..#\n###"
+    ((-1+0j),(-1+1j),(-1+2j),(-1+3j)),       # "#\n#\n#\n#"
+    ((-1),(0),(-1+1j),(1j))
     ]
 
 tunnel = {i-1j:'_' for i in range(-4,5)}
 MAX_HEIGHT = -1
-
-def cycle_length(sequence):
-    for i in range(1,len(sequence)):
-        if all(sequence[:i]==sequence[k*i:(k+1)*i] for k in range(len(sequence)//i)):
-            return i
-
 
 def print_tunnel(tunnel,piece=[],jet_move="."):
     print(jet_move)
@@ -33,25 +24,46 @@ def print_tunnel(tunnel,piece=[],jet_move="."):
     for row in tunnel_s[::-1]:
         print("".join(row))
 
-MAX_COUNT = len_js*300
-MAX_TUNNEL_WINDOW = 15
+MAX_TUNNEL_WINDOW = 17
 
-def free_tunnel(tunnel):
-    for i in list(tunnel.keys()):
-        if i.real < MAX_HEIGHT-MAX_TUNNEL_WINDOW:
-            del tunnel[i]
+def top_pattern(tunnel,piece):
+    return frozenset(x+1j*(i-MAX_HEIGHT) for x in range(-4,5) for i in range(MAX_HEIGHT-MAX_TUNNEL_WINDOW,MAX_HEIGHT+1) if x+1j*i in tunnel),piece
 
+
+
+MAX_COUNT = 1_000_000_000_000
+# MAX_COUNT = 2022
+# heights = {}
+seen = {}
 
 x = []
 count = 0
-for piece in cycle(pieces):
-    if count%len_js == 0:
-        print(MAX_HEIGHT+1)
-        print_tunnel(tunnel,piece,'')
-        x.append(MAX_HEIGHT+1)
-        free_tunnel(tunnel)
+while True:
+    piece = pieces[count%5]
+    if MAX_HEIGHT>MAX_TUNNEL_WINDOW:
+        pattern = top_pattern(tunnel,piece)
+        if pattern in seen:
+            # if pattern not in heights:
+                last_height,last_count = seen[pattern]
+                height_diff, count_diff = MAX_HEIGHT-last_height, count-last_count
+
+                num_count = (MAX_COUNT - count)//count_diff
+                count += num_count*count_diff
+                MAX_HEIGHT += height_diff*num_count
+                # copy the top of tunnel
+                for point in pattern[0]:
+                    tunnel[point+1j*(MAX_HEIGHT)] = '#'
+                # heights[pattern] = height_diff, count_diff
+                # break
+                # seen[pattern] = (MAX_HEIGHT,count)
+            # else:
+                # # just checking repetition
+                # last_height,last_count = seen[pattern]
+                # assert heights[pattern] == (MAX_HEIGHT-last_height, count-last_count)
+                # seen[pattern] = (MAX_HEIGHT,count)
+        else:
+            seen[pattern] = (MAX_HEIGHT,count)
     if count==MAX_COUNT:
-        # print_tunnel(tunnel,piece,'')
         break
     count+=1
     start = (MAX_HEIGHT + 4)*1j
@@ -79,6 +91,3 @@ for piece in cycle(pieces):
             piece = [i+move_x-1j for i in piece]
 
 print(MAX_HEIGHT+1)
-diff_x = [i-j for i,j in zip(x[1:],x)]
-mind = min(diff_x[1:])
-diff_x = [i-mind for i in diff_x]
